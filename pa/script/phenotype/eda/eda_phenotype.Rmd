@@ -1,0 +1,174 @@
+---
+  title: "PsA GWAS"
+author: "Boxi Lin"
+date: '2020-01-15'
+output: 
+  html_document:
+  toc: true
+toc_float: true
+number_sections: true
+theme: lumen
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(readxl)
+library(lubridate)
+library(eeptools)
+library(GGally)
+```
+
+
+
+```{r,include=FALSE, cache=TRUE}
+### phenotype matrix ######
+
+phenotype_eda <- readRDS("../../hot_code/backingfiles/phenotype_pa.RDS")
+```
+
+# Phenotype
+
+The PsA (pseudomonas infection) phenotype data contains pheotype records of 2,751 patients, including their: date of birth, PsA status, first PsA age and date, first chronic PsA age and date, CFTR, pancreatitis function, etc. For GWAS, `pa_age` (first PsA age) and `pac_age`(first chronic PsA age) will be the response variables, controlling CFTR, pancreatitis function or other possible confounders.
+
+```{r}
+a = reshape2::melt(table(as.character(phenotype_eda$pa),as.character(phenotype_eda$cftr)))
+ggplot(data=a, aes(x=Var1, y=value, fill=as.factor(Var2)))+
+  geom_bar(stat="identity")
+```
+
+The majority of patients are "Chronically infected". For GWAS on `pa_age`, we will discard patients with "No growth", "Missing" and "Positive with NA severity" PsA status. Similarly for GWAS on `pac_age`, we will only use "Chronically infected" patients.
+
+
+## Chronological distribution of patients' date of birth and diagnose
+
+```{r, echo=FALSE, fig.height=4, fig.width=10}
+# date histogram
+par(mfrow = c(1,1))
+
+hist_range = range(c(phenotype_eda$dob, phenotype_eda$pa_date), na.rm = 1)
+ax <- seq(hist_range[1],hist_range[2], by="months")
+
+c1 <- rgb(173,216,230,max = 255, alpha = 80, names = "lt.blue")
+c2 <- rgb(255,192,203, max = 255, alpha = 80, names = "lt.pink")
+
+# dob
+h1 <- hist(phenotype_eda$dob, breaks = "years", 
+     main = paste("Date of Birth(", sum(!is.na(phenotype_eda$dob)),"individuals )" ),
+     freq = T, xlim= hist_range,xlab = "Time", plot = FALSE)
+
+# pa_date
+h2<- hist(phenotype_eda$pa_date, 
+          breaks = "years", 
+     main = paste("Pa_date (", sum(!is.na(phenotype_eda$dob)),"individuals )" ),
+     freq = T, xlim= hist_range,xlab = "Time",plot = FALSE)
+op <- par(cex = 1.2)
+plot(h2, col = c1,xlim = hist_range, xaxt='n', main = "")
+plot(h1,col = c2, add = T)
+axis(side = 1, at = as.numeric(ax), labels = substr(ax, 1,7), tck = -0.01)
+legend('topright', legend=c('Date of Birth', 'Pa date'), fill=c(c2, c1), bty = 'n',)
+```
+
+
+```{r}
+h1 <- hist(phenotype_eda$dob, breaks = "years", 
+     main = paste("Date of Birth(", sum(!is.na(phenotype_eda$dob)),"individuals )" ),
+     freq = T, xlim= hist_range,xlab = "Years")
+
+# pa_date
+h2 <- hist(phenotype_eda$pa_date,breaks = "months")
+
+plot(h1)
+plot(h2, add = T)
+```
+
+Notice the wild peaks after 2014 in the last two graphs.
+
+
+
+## Response variables check
+
+
+```{r,include=FALSE, cache=TRUE}
+### phenotype matrix ######
+
+phenotype_gwas <- phenotype_eda
+```
+
+```{r,echo=FALSE}
+# pa_age
+hist(phenotype_gwas$pa_age,freq = 0, main = "Patient first PA age", xlab = "age", breaks = 80)
+lines(density(phenotype_gwas$pa_age,adjust = 0.8))
+```
+
+Both `pa_age` and `pac_age` are zero truncated, and scew to right. Although we use Gaussian regression for benchmark model, Possion family or log-transform of response may be considered.
+
+## CFTR score
+
+```{r}
+table(phenotype_gwas$cftr, useNA = "ifany")
+```
+
+## Pairwise plot
+
+```{r, echo=FALSE, message=F, warning=F, cache=T, fig.width=8, fig.height=8, cache=TRUE}
+phenotype_gwas$cftr<- as.factor(phenotype_gwas$cftr)
+df = data.frame(phenotype_gwas[,c("pa_age","pa", "cftr")])
+ggpairs(df, lower = "blank",diag = "blank")
+```
+
+```{r, fig.height=12. fig.width=8}
+my_fn <- function(data, mapping, method="loess", ...){
+      p <- ggplot(data = data, mapping = mapping) + 
+      geom_point() + 
+      geom_smooth(method=method, ...)
+      p
+    }
+phenotype_gwas$log_age <- log(phenotype_gwas$pa_age)
+df2 = data.frame(phenotype_gwas[,c("pa_age","pa_date","dob")])
+ggpairs(df2, lower = list(continuous = my_fn))
+```
+
+
+# GWAS - dosage data
+
+$$T: Pa~age|Pa~status=1;$$
+  
+  ## Baseline model
+  
+  $$E(T) = \alpha + \beta_jSNP_j$$
+  ![](../../../psa/result/gwas/plot/baseline_manhattan.png)
+![](../../../psa/result/gwas/plot/p_value_baseline.png)
+![](../../../psa/result/gwas/plot/ppplot_baseline_log.png)
+
+## Log-transformed outcome
+
+$$E(log(T)) = \alpha + \beta_jSNP_j$$
+  ![](../../../psa/result/gwas/plot/log_manhattan.png)
+![](../../../psa/result/gwas/plot/p_value_log.png)
+
+![](../../../psa/result/gwas/plot/ppplot_log.png)
+
+Some non-linear re-expression of the dependent variable is indicated when any of the following apply:
+  
+  - The residuals have a skewed distribution. The purpose of a transformation is to obtain residuals that are approximately symmetrically distributed (about zero, of course).
+
+- The spread of the residuals changes systematically with the values of the dependent variable ("heteroscedasticity"). The purpose of the transformation is to remove that systematic change in spread, achieving approximate "homoscedasticity."
+
+- To linearize a relationship.
+
+- When scientific theory indicates. For example, chemistry often suggests expressing concentrations as logarithms (giving activities or even the well-known pH).
+
+- When a more nebulous statistical theory suggests the residuals reflect "random errors" that do not accumulate additively.
+
+- To simplify a model. For example, sometimes a logarithm can simplify the number and complexity of "interaction" terms.
+
+
+![](../../../psa/result/gwas/plot/ppplot_baseline_log.png)
+
+
+## Log-link outcome
+
+$$log(E(T)) = \alpha + \beta_jSNP_j$$
+  
+  ## PCA; other covariates

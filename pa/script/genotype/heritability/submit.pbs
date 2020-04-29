@@ -1,0 +1,45 @@
+#!/bin/bash -x
+
+
+#PBS -l mem=60g
+#PBS -l vmem=60g
+#PBS -l walltime=96:00:00
+#PBS -l nodes=1:ppn=1
+#PBS -l gres=localhd:10
+
+
+##### 
+## boxi to change into his own directory
+######
+#PBS -o /hpf/largeprojects/struglis/boxi/psa/script/hot_code/heritability/job_output
+#PBS -e /hpf/largeprojects/struglis/boxi/psa/script/hot_code/heritability/job_output
+#PBS -d /hpf/largeprojects/struglis/boxi/psa/script/hot_code/heritability
+#PBS -N pa_april
+
+date
+
+module load gcta
+# module load plink
+
+pwd
+
+echo 'Start!!!!!!!!!!'
+
+# bed -> grm, autosome
+gcta64 --bfile ../backingfiles/canadian_pa_norel --autosome --maf 0.01 --make-grm --out auto/herit_pa --thread-num 10
+echo "done step 1"
+
+# grm -> variance explained
+gcta64 --grm auto/herit_pa --pheno auto/pa.pheno --reml  --out auto/herit_pa --thread-num 10
+echo "done step 2"
+
+# bed -> grm, X-chromosome
+gcta64 --bfile ../backingfiles/canadian_pa_norel  --update-sex xchr/sex.list  --make-grm-xchr  --out herit_x
+echo "done step 3"
+
+# grm -> "unrelated" grm, xchr
+# gcta64 --grm xchr/test_xchr_small --grm-cutoff 0.025 --make-grm --out xchr/test_xchr_small_rm025
+
+#  grm -> variance explained, xchr
+ gcta64 --grm herit_x --pheno auto/pa.pheno --reml --out xchr/variance --thread-num 10
+echo "done step 4"

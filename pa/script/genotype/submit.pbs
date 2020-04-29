@@ -1,0 +1,61 @@
+#!/bin/bash -x
+
+
+#PBS -l mem=60g
+#PBS -l vmem=60g
+#PBS -l walltime=96:00:00
+#PBS -l nodes=1:ppn=1
+#PBS -l gres=localhd:10
+
+
+##### 
+## boxi to change into his own directory
+######
+#PBS -o /hpf/largeprojects/struglis/boxi/psa/script/hot_code/job_output
+#PBS -e /hpf/largeprojects/struglis/boxi/psa/script/hot_code/job_output
+#PBS -d /hpf/largeprojects/struglis/boxi/psa/script/hot_code/related
+#PBS -N ld
+
+date
+
+module load R/3.5.1
+# module load king
+# module load plink/1.07
+module load plink
+# module load plink/1.90b3x
+# module load tabix
+
+pwd
+
+### QC
+# plink --bfile ../backingfiles/canadian_pa_norel --hardy
+# plink --bfile ../backingfiles/canadian_pa_norel --freq
+# plink --bfile ../backingfiles/canadian_pa_norel --mendel
+
+# echo "SUBSETing"
+# Rscript --vanilla qc_subset.R
+
+# sed -i 's/X/23/g' ../backingfiles/canadian_pa_norel.bim
+
+# echo "TRUFFLE"
+# plink --bfile ../backingfiles/canadian_pa --recode vcf --out ../backingfiles/canadian_pa
+# bgzip -c ../backingfiles/canadian_pa.vcf > ../backingfiles/canadian_pa.vcf.gz
+# tabix -p vcf ../backingfiles/canadian_pa.vcf.gz
+# ./truffle --vcf ../backingfiles/canadian_pa.vcf.gz --cpu 8 --mindist 2000 --maf 0.1 --out psa_truffle
+
+# echo "GWAS"
+# Rscript --vanilla gwas_full.R
+
+# echo "KING"
+# king -b ../backingfiles/canadian_pac_all.bed --kinship
+# echo "done KING"
+
+# Rscript --vanilla GENESIS.R
+# Rscript --vanilla ld.R
+# plink --bfile ../backingfiles/canadian_pa_all --extract epical_snp_id.txt --make-bed -out ../backingfiles/epical_set
+
+
+plink --bfile plink --r2 bin --out sampled_ld
+# echo "try 1 done, starting try 2"
+# plink --bfile ../backingfiles/canadian_pa_all --r2 square --make-bed -out try2
+# echo "done try 2"
