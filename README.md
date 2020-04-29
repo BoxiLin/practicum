@@ -3,7 +3,7 @@
 This is the online appendix for the code to reproduce my practicum project in Winter 2020, including programming code for phenotype data exploration, sample & genotype quality control, post-analysis plots and helper function package, etc.
 
 The structure of the files is as the follows:
-
+```{bash}
 ├── pkg
 │   └── boxi
 │       ├── DESCRIPTION
@@ -58,3 +58,4 @@ The structure of the files is as the follows:
         │   └── eda_phenotype.html
         ├── manipulate
         └── raw
+```
