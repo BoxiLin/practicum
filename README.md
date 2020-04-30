@@ -4,7 +4,7 @@ This is the online appendix for the code to reproduce my practicum project in Wi
 
 The structure of the files is as the follows:
 ```{bash}
-├── pkg
+├── pkg: Package of helper functions for GWAS, including data cleaning and visualization.
 │   └── boxi
 │       ├── DESCRIPTION
 │       ├── NAMESPACE
@@ -28,21 +28,21 @@ The structure of the files is as the follows:
 │       ├── cftr.pptx
 │       ├── gwas.pdf
 │       └── survival.pdf
-└── script
-    ├── genotype
+└── script: main folder for GWAS
+    ├── genotype: Dealing with genotypic data
     │   ├── backingfiles
-    │   ├── gwas
+    │   ├── gwas: baseline model
     │   │   └── gwas.R
-    │   ├── heritability
+    │   ├── heritability: heritability estimation
     │   │   └── submit.pbs
-    │   ├── qc
+    │   ├── qc: genotypic quality control
     │   │   ├── qc_align2.R
     │   │   ├── qc_ibd_validate.R
     │   │   ├── qc_kinship.R
     │   │   ├── qc_pca_bed.R
     │   │   ├── qc_qc.R
     │   │   └── qc_subset.R
-    │   ├── related
+    │   ├── related: LMM model
     │   │   ├── GENESIS.R
     │   │   ├── ld.R
     │   │   ├── output
@@ -50,7 +50,7 @@ The structure of the files is as the follows:
     │   │   ├── set_test.R
     │   │   └── temp
     │   └── submit.pbs
-    └── phenotype
+    └── phenotype: phenotype data cleaning
         ├── clean
         │   └── phenotype.R
         ├── eda
